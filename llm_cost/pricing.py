@@ -7,7 +7,6 @@ once the numbers matter.
 """
 
 import json
-import os
 
 __all__ = [
     "ModelPrice",
@@ -230,11 +229,16 @@ def parse_pricing(data, source="override"):
 
 def load_pricing(path):
     """Load a pricing override from ``path``."""
-    if not os.path.exists(path):
-        raise ValueError("pricing file not found: %s" % path)
-    with open(path, "r", encoding="utf-8") as handle:
-        try:
-            data = json.load(handle)
-        except ValueError as error:
-            raise ValueError("pricing file %s is not valid JSON: %s" % (path, error))
+    # Read as text first so a missing file, a directory, or a permissions
+    # error all surface as the same ValueError the CLI already maps to its
+    # "bad input" exit code, instead of an unhandled OSError traceback.
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError as error:
+        raise ValueError("could not read pricing file %s: %s" % (path, error))
+    try:
+        data = json.loads(text)
+    except ValueError as error:
+        raise ValueError("pricing file %s is not valid JSON: %s" % (path, error))
     return parse_pricing(data, source=path)

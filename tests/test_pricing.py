@@ -6,6 +6,7 @@ from llm_cost.pricing import (
     PricingTable,
     UnknownModelError,
     default_pricing,
+    load_pricing,
     parse_pricing,
 )
 
@@ -111,3 +112,21 @@ def test_parse_pricing_non_dict_raises():
 def test_pricing_table_models_is_sorted():
     table = PricingTable({"b": ModelPrice("b", 1, 1), "a": ModelPrice("a", 1, 1)})
     assert table.models() == ["a", "b"]
+
+
+def test_load_pricing_missing_file_raises_value_error():
+    with pytest.raises(ValueError, match="could not read pricing file"):
+        load_pricing("/no/such/pricing.json")
+
+
+def test_load_pricing_directory_raises_value_error():
+    with pytest.raises(ValueError, match="could not read pricing file"):
+        load_pricing(".")
+
+
+def test_load_pricing_reads_file(tmp_path):
+    path = tmp_path / "prices.json"
+    path.write_text('{"models": {"internal-router-v3": {"input": 0.2, "output": 0.8}}}')
+    table = load_pricing(str(path))
+    assert table.source == str(path)
+    assert table.resolve("internal-router-v3").input == 0.2

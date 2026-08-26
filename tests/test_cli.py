@@ -110,6 +110,13 @@ def test_models_lists_builtin_table(capsys):
     assert "built-in" in out
 
 
+def test_pricing_missing_file_exits_with_bad_input(capsys):
+    code = main(["--pricing", "/no/such/prices.json", "estimate", "--model", "claude-opus-5"])
+    err = capsys.readouterr().err
+    assert code == 2
+    assert "/no/such/prices.json" in err
+
+
 def test_pricing_override_before_subcommand(capsys, tmp_path):
     override = tmp_path / "prices.json"
     override.write_text(
