@@ -85,6 +85,48 @@ def test_parse_record_cached_exceeding_prompt_raises():
         )
 
 
+def test_parse_record_negative_anthropic_input_tokens_raises():
+    with pytest.raises(ValueError):
+        parse_record(
+            {
+                "model": "m",
+                "usage": {"input_tokens": -5, "output_tokens": 1},
+            }
+        )
+
+
+def test_parse_record_negative_output_tokens_raises():
+    with pytest.raises(ValueError):
+        parse_record({"model": "m", "usage": {"prompt_tokens": 10, "completion_tokens": -1}})
+
+
+def test_parse_record_negative_cache_write_tokens_raises():
+    with pytest.raises(ValueError):
+        parse_record(
+            {
+                "model": "m",
+                "usage": {
+                    "input_tokens": 10,
+                    "output_tokens": 1,
+                    "cache_creation_input_tokens": -9000,
+                },
+            }
+        )
+
+
+def test_load_usage_negative_token_line_is_skipped_not_raised():
+    text = "\n".join(
+        [
+            '{"model":"m","usage":{"prompt_tokens":10,"completion_tokens":-1}}',
+            '{"model":"m","usage":{"prompt_tokens":10,"completion_tokens":1}}',
+        ]
+    )
+    records, problems = load_usage(text)
+    assert len(records) == 1
+    assert len(problems) == 1
+    assert "output_tokens" in problems[0]
+
+
 def test_load_usage_skips_malformed_lines_by_default():
     text = "\n".join(
         [

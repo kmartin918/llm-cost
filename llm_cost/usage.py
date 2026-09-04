@@ -76,6 +76,8 @@ def _normalise_usage(usage):
         prompt_tokens = int(usage.get("prompt_tokens", 0))
         details = usage.get("prompt_tokens_details") or {}
         cached_input_tokens = int(details.get("cached_tokens", 0))
+        if cached_input_tokens > prompt_tokens:
+            raise ValueError("cached_tokens exceeds prompt_tokens")
         input_tokens = prompt_tokens - cached_input_tokens
         output_tokens = int(usage.get("completion_tokens", 0))
         cache_write_tokens = 0
@@ -83,8 +85,18 @@ def _normalise_usage(usage):
         raise ValueError(
             "usage object has neither Anthropic- nor OpenAI-shaped token fields"
         )
-    if input_tokens < 0:
-        raise ValueError("cached_tokens exceeds prompt_tokens")
+    # A negative count here (a raw negative field in the log, not just the
+    # prompt/cache subtraction above) would otherwise sail through as a valid
+    # record and only blow up later, as an unhandled ValueError, when
+    # estimate_cost multiplies it by a price.
+    for name, value in (
+        ("input_tokens", input_tokens),
+        ("output_tokens", output_tokens),
+        ("cached_input_tokens", cached_input_tokens),
+        ("cache_write_tokens", cache_write_tokens),
+    ):
+        if value < 0:
+            raise ValueError("%s must not be negative, got %d" % (name, value))
     return input_tokens, output_tokens, cached_input_tokens, cache_write_tokens
 
 
