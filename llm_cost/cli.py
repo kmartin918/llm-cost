@@ -5,7 +5,7 @@ import json
 import sys
 
 from .estimate import estimate_cost
-from .pricing import UnknownModelError, default_pricing, load_pricing
+from .pricing import PRICING_NOTE, UnknownModelError, default_pricing, load_pricing
 from .report import build_report, compare_models
 from .table import format_int, format_money, render_table
 from .usage import load_usage
@@ -292,10 +292,15 @@ def cmd_compare(args, table):
 
 
 def cmd_models(args, table):
+    # The disclaimer only applies to the numbers we shipped; an override file
+    # speaks for itself and may well be more current than PRICING_NOTE.
+    note = PRICING_NOTE if table.source == "built-in" else None
+
     if args.json:
         payload = {
             "as_of": table.as_of,
             "source": table.source,
+            "note": note,
             "models": dict(
                 (name, table.resolve(name).to_dict()) for name in table.models()
             ),
@@ -307,6 +312,8 @@ def cmd_models(args, table):
         "%d models, USD per 1M tokens, as of %s (source: %s)"
         % (len(table), table.as_of, table.source)
     )
+    if note:
+        print(note)
     print()
     rows = []
     for name in table.models():

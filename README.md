@@ -117,8 +117,14 @@ claude-fable-5     anthropic    10.00     50.00  $0.1500        10.0x
 ```console
 $ llm-cost models
 13 models, USD per 1M tokens, as of 2026-06-24 (source: built-in)
+Built-in prices are public list prices captured on 2026-06-24, in USD per 1M
+tokens. Verify them against your own invoice and override with --pricing FILE.
+
 ...
 ```
+
+The disclaimer only prints for the built-in table; pass `--pricing` and it
+gets out of the way.
 
 Every subcommand accepts `--json` for machine-readable output and `--pricing`
 for an override file, before or after the subcommand.

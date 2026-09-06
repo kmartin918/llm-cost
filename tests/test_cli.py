@@ -110,6 +110,36 @@ def test_models_lists_builtin_table(capsys):
     assert "built-in" in out
 
 
+def test_models_prints_pricing_note_for_builtin_table(capsys):
+    code = main(["models"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Verify them against your own invoice" in out
+
+
+def test_models_json_includes_note_for_builtin_table(capsys):
+    code = main(["models", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert "Verify them against your own invoice" in payload["note"]
+
+
+def test_models_omits_pricing_note_for_override(capsys, tmp_path):
+    override = tmp_path / "prices.json"
+    override.write_text(
+        json.dumps({"models": {"internal-router-v3": {"input": 0.2, "output": 0.8}}}),
+        encoding="utf-8",
+    )
+    code = main(["--pricing", str(override), "models"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Verify them against your own invoice" not in out
+
+    code = main(["--pricing", str(override), "models", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["note"] is None
+
+
 def test_pricing_missing_file_exits_with_bad_input(capsys):
     code = main(["--pricing", "/no/such/prices.json", "estimate", "--model", "claude-opus-5"])
     err = capsys.readouterr().err
